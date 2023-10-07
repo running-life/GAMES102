@@ -1,8 +1,10 @@
-#include <iostream>
+﻿#include <iostream>
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
+#include <vector>
+#include "Shader.h"
 
 // GLEW
 #define GLEW_STATIC
@@ -15,22 +17,14 @@
 // Function prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
+void mouse_callback(GLFWwindow* window, int button, int action, int mods);
+
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
 
-// Shaders
-const GLchar* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 position;\n"
-"void main()\n"
-"{\n"
-"gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
-"}\0";
-const GLchar* fragmentShaderSource = "#version 330 core\n"
-"out vec4 color;\n"
-"void main()\n"
-"{\n"
-"color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-"}\n\0";
+
+std::vector<float> controlPoints;
+unsigned int VAOControlPoints, VBOControlPoints;
 
 // The MAIN function, from here we start the application and run the game loop
 int main()
@@ -49,6 +43,7 @@ int main()
 
     // Set the required callback functions
     glfwSetKeyCallback(window, key_callback);
+    glfwSetMouseButtonCallback(window, mouse_callback);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -71,52 +66,25 @@ int main()
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
 
+    Shader shader("./shader/vertex.shader", "./shader/fragment.shader");
+    shader.Use();
 
-    // Build and compile our shader program
-    // Vertex shader
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-    // Check for compile time errors
-    GLint success;
-    GLchar infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // Fragment shader
-    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    // Check for compile time errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-    // Link shaders
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-    // Check for linking errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
 
+    float axisVertices[] = {
+        // X-axis
+       -1.0f, 0.0f, 1.0f, 1.0f, 1.0f,    // beginning
+        1.0f, 0.0f, 1.0f, 1.0f, 1.0f,  // ending
+
+        // Y-axis
+         0.0f, -1.0f, 1.0f, 1.0f, 1.0f,  // beginning
+         0.0f,  1.0f, 1.0f, 1.0f, 1.0f   // ending
+    };
 
     // Set up vertex data (and buffer(s)) and attribute pointers
     GLfloat vertices[] = {
-        -0.5f, -0.5f, 0.0f, // Left  
-         0.5f, -0.5f, 0.0f, // Right 
-         0.0f,  0.5f, 0.0f  // Top   
+        -0.5f, -0.5f, 0.5f, 0.6f, 1.0f, // Left  
+         0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // Right 
+         0.0f,  0.5f, 1.0f, 1.0f, 1.0f // Top   
     };
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -125,14 +93,59 @@ int main()
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(axisVertices), axisVertices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
 
     glBindVertexArray(0); // Unbind VAO (it's always a good thing to unbind any buffer/array to prevent strange bugs)
+
+
+    unsigned int VBOTriangle, VAOTriangle;
+    glGenVertexArrays(1, &VAOTriangle);
+    glGenBuffers(1, &VBOTriangle);
+    glBindVertexArray(VAOTriangle);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOTriangle);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
+
+    glBindVertexArray(0);
+
+
+    //glGenVertexArrays(1, &VAOControlPoints);
+    //glGenBuffers(1, &VBOControlPoints);
+
+
+    GLuint pointVAO, pointVBO;
+    glGenVertexArrays(1, &pointVAO);
+    glGenBuffers(1, &pointVBO);
+
+    // 绑定VAO
+    glBindVertexArray(pointVAO);
+
+    // 绑定VBO并将控制点的顶点数据复制到VBO
+    glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+    glBufferData(GL_ARRAY_BUFFER, 100 * sizeof(GLfloat), nullptr, GL_STATIC_DRAW);
+
+    // 配置顶点属性指针
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(1);
+
+
+    
+
 
     // Game loop
     while (!glfwWindowShouldClose(window))
@@ -151,10 +164,32 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         // Draw our first triangle
-        glUseProgram(shaderProgram);
+        shader.Use();
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_LINES, 0, 4);
         glBindVertexArray(0);
+
+        //glBindVertexArray(VAOTriangle);
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
+        //glBindVertexArray(0);
+
+        shader.Use();
+
+        glBindVertexArray(pointVAO);
+        // 绑定VBO并将控制点的顶点数据复制到VBO
+        glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+        glBufferData(GL_ARRAY_BUFFER, 1000 * sizeof(GLfloat), controlPoints.data(), GL_STATIC_DRAW);
+        glPointSize(15);
+        glDrawArrays(GL_POINTS, 0, controlPoints.size() / 5);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+
+        //shader.Use();
+        //glPointSize(15.0f);
+        //glBindVertexArray(VAOControlPoints);
+        //glDrawArrays(GL_POINTS, 0, controlPoints.size()/5 );
+        //glBindVertexArray(0);
+
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -181,4 +216,38 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
+
+void mouse_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        xpos /= (WIDTH/2);
+        xpos -= 1;
+        ypos /= (HEIGHT/2);
+        ypos = 1.0 - ypos;
+        std::cout << "Mouse clicked at position: " << xpos << ", " << ypos << std::endl;
+
+
+        controlPoints.push_back(xpos);
+        controlPoints.push_back(ypos);
+        controlPoints.push_back(0.0f);
+        controlPoints.push_back(0.0f);
+        controlPoints.push_back(0.0f);
+
+
+
+        
+
+        for (int j = 0; j < controlPoints.size() / 5; ++j) {
+            for (int i = 0; i < 5; ++i) {
+                std::cout << controlPoints[j * 5 + i] << " ";
+            }
+            std::cout << std::endl;
+        }
+
+
+
+    }
 }
