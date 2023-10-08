@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <vector>
 #include "Shader.h"
+#include "global.h"
+#include "MyWindow.h"
+
 
 // GLEW
 #define GLEW_STATIC
@@ -19,8 +22,13 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void mouse_callback(GLFWwindow* window, int button, int action, int mods);
 
+
+//extern void info_window(bool* open);
+//extern void control_window(bool* open);
+
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 600;
+float curPoint[2] = {};
 
 
 std::vector<float> controlPoints;
@@ -52,6 +60,9 @@ int main()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
+    ImGuiWindowFlags windowFlags = 0;
+    windowFlags != ImGuiWindowFlags_NoCollapse;
+
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
     ImGui_ImplOpenGL3_Init();
@@ -66,6 +77,7 @@ int main()
     glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
 
+    // Define the shader
     Shader shader("./shader/vertex.shader", "./shader/fragment.shader");
     shader.Use();
 
@@ -80,12 +92,6 @@ int main()
          0.0f,  1.0f, 1.0f, 1.0f, 1.0f   // ending
     };
 
-    // Set up vertex data (and buffer(s)) and attribute pointers
-    GLfloat vertices[] = {
-        -0.5f, -0.5f, 0.5f, 0.6f, 1.0f, // Left  
-         0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // Right 
-         0.0f,  0.5f, 1.0f, 1.0f, 1.0f // Top   
-    };
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -103,27 +109,6 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
 
     glBindVertexArray(0); // Unbind VAO (it's always a good thing to unbind any buffer/array to prevent strange bugs)
-
-
-    unsigned int VBOTriangle, VAOTriangle;
-    glGenVertexArrays(1, &VAOTriangle);
-    glGenBuffers(1, &VBOTriangle);
-    glBindVertexArray(VAOTriangle);
-    glBindBuffer(GL_ARRAY_BUFFER, VBOTriangle);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
-
-    glBindVertexArray(0);
-
-
-    //glGenVertexArrays(1, &VAOControlPoints);
-    //glGenBuffers(1, &VBOControlPoints);
 
 
     GLuint pointVAO, pointVBO;
@@ -144,7 +129,7 @@ int main()
     glEnableVertexAttribArray(1);
 
 
-    
+    bool controlWindowFlag = false, infoWindowFlag = false;
 
 
     // Game loop
@@ -156,7 +141,20 @@ int main()
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::ShowDemoWindow(); // Show demo window! :)
+        //ImGui::ShowDemoWindow(); // Show demo window! :)
+
+        ImGui::Begin("HW1", NULL, windowFlags);
+        ImGui::Checkbox("Information Window", &infoWindowFlag);
+        ImGui::Checkbox("Control Window", &controlWindowFlag);
+        ImGui::End();
+
+        info_window(&infoWindowFlag);
+        control_window(&controlWindowFlag);
+
+        ImGui::Render();
+
+        
+        
 
         // Render
         // Clear the colorbuffer
@@ -178,22 +176,13 @@ int main()
         glBindVertexArray(pointVAO);
         // 绑定VBO并将控制点的顶点数据复制到VBO
         glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-        glBufferData(GL_ARRAY_BUFFER, 1000 * sizeof(GLfloat), controlPoints.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, controlPoints.size() * sizeof(GLfloat), controlPoints.data(), GL_STATIC_DRAW);
         glPointSize(15);
         glDrawArrays(GL_POINTS, 0, controlPoints.size() / 5);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
-
-        //shader.Use();
-        //glPointSize(15.0f);
-        //glBindVertexArray(VAOControlPoints);
-        //glDrawArrays(GL_POINTS, 0, controlPoints.size()/5 );
-        //glBindVertexArray(0);
-
-
-        ImGui::Render();
+        
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         // Swap the screen buffers
         glfwSwapBuffers(window);
     }
@@ -206,7 +195,7 @@ int main()
     ImGui::DestroyContext();
 
     // Terminate GLFW, clearing any resources allocated by GLFW.
-
+    glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
 }
@@ -229,25 +218,28 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods) {
         ypos = 1.0 - ypos;
         std::cout << "Mouse clicked at position: " << xpos << ", " << ypos << std::endl;
 
+        curPoint[0] = xpos;
+        curPoint[1] = ypos;
 
-        controlPoints.push_back(xpos);
-        controlPoints.push_back(ypos);
-        controlPoints.push_back(0.0f);
-        controlPoints.push_back(0.0f);
-        controlPoints.push_back(0.0f);
+        //controlPoints.push_back(xpos);
+        //controlPoints.push_back(ypos);
+        //controlPoints.push_back(0.0f);
+        //controlPoints.push_back(0.0f);
+        //controlPoints.push_back(0.0f);
 
 
 
         
 
-        for (int j = 0; j < controlPoints.size() / 5; ++j) {
-            for (int i = 0; i < 5; ++i) {
-                std::cout << controlPoints[j * 5 + i] << " ";
-            }
-            std::cout << std::endl;
-        }
+        //for (int j = 0; j < controlPoints.size() / 5; ++j) {
+        //    for (int i = 0; i < 5; ++i) {
+        //        std::cout << controlPoints[j * 5 + i] << " ";
+        //    }
+        //    std::cout << std::endl;
+        //}
 
 
 
     }
 }
+
