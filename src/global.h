@@ -4,3 +4,4 @@
 extern std::vector <float> controlPoints;
 extern float curPoint[2];
 extern int controlPointsNum;
+extern bool cursorPointFlag;
