@@ -7,6 +7,7 @@
 #include "Shader.h"
 #include "global.h"
 #include "MyWindow.h"
+#include "HM1.h"
 
 
 // GLEW
@@ -120,19 +121,14 @@ void temp() {
     ImGui::End();
 }
 
-//extern void info_window(bool* open);
-//extern void control_window(bool* open);
 
 // Window dimensions
 const GLuint WIDTH = 1280, HEIGHT = 720;
 float curPoint[2] = {};
-bool cursorPointFlag = true;
+std::vector<HM1Point> HM1::controlPoints = std::vector<HM1Point>();
+std::vector<HM1Point> HM1::resultPolynomial = std::vector<HM1Point>();
 
 
-
-
-std::vector<float> controlPoints;
-unsigned int VAOControlPoints, VBOControlPoints;
 
 // The MAIN function, from here we start the application and run the game loop
 int main()
@@ -145,7 +141,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-    // Create a GLFWwindow object that we can use for GLFW's functions
+    // Create a GLFW window object that we can use for GLFW's functions
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr);
     glfwMakeContextCurrent(window);
 
@@ -162,7 +158,8 @@ int main()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     ImGuiWindowFlags windowFlags = 0;
-    windowFlags != ImGuiWindowFlags_NoCollapse;
+    //windowFlags |= ImGuiWindowFlags_NoCollapse;
+    windowFlags |= ImGuiWindowFlags_NoBackground;
 
     // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);          // Second param install_callback=true will install GLFW callbacks and chain to existing ones.
@@ -181,17 +178,22 @@ int main()
     // Define the shader
     Shader shader("./shader/vertex.shader", "./shader/fragment.shader");
     shader.Use();
+    
 
 
-    float axisVertices[] = {
+    HM1Point axisVertices[] = {
         // X-axis
-       -1.0f, 0.0f, 1.0f, 1.0f, 1.0f,    // beginning
-        1.0f, 0.0f, 1.0f, 1.0f, 1.0f,  // ending
+       HM1Point( - 1.0f, 0.0f, 1.0f, 1.0f, 1.0f ),    // beginning
+       HM1Point(1.0f, 0.0f, 1.0f, 1.0f, 1.0f),  // ending
 
         // Y-axis
-         0.0f, -1.0f, 1.0f, 1.0f, 1.0f,  // beginning
-         0.0f,  1.0f, 1.0f, 1.0f, 1.0f   // ending
+       HM1Point(0.0f, -1.0f, 1.0f, 1.0f, 1.0f),  // beginning
+       HM1Point(0.0f,  1.0f, 1.0f, 1.0f, 1.0f)   // ending
     };
+
+    HM1 homework1;
+
+
 
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -230,19 +232,18 @@ int main()
     glEnableVertexAttribArray(1);
 
 
-    bool controlWindowFlag = false, infoWindowFlag = false;
+    bool controlWindowFlag = true, infoWindowFlag = true;
 
 
     // Game loop
     while (!glfwWindowShouldClose(window))
     {
-        // Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
+        // Check if any events have been activated (key pressed, mouse moved etc.) and call corresponding response functions
         glfwPollEvents();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        //ImGui::ShowDemoWindow(); // Show demo window! :)
 
         ImGui::Begin("HW1", NULL, windowFlags);
         ImGui::Checkbox("Information Window", &infoWindowFlag);
@@ -259,7 +260,7 @@ int main()
         
 
         // Render
-        // Clear the colorbuffer
+        // Clear the color buffer
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -278,11 +279,32 @@ int main()
         glBindVertexArray(pointVAO);
         // 绑定VBO并将控制点的顶点数据复制到VBO
         glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-        glBufferData(GL_ARRAY_BUFFER, controlPoints.size() * sizeof(GLfloat), controlPoints.data(), GL_STATIC_DRAW);
-        glPointSize(15);
-        glDrawArrays(GL_POINTS, 0, controlPoints.size() / 5);
+        glBufferData(GL_ARRAY_BUFFER, HM1::controlPoints.size() * sizeof(GLfloat), HM1::controlPoints.data(), GL_STATIC_DRAW);
+        glPointSize(10);
+        glDrawArrays(GL_POINTS, 0, HM1::controlPoints.size() / 5);
+
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
+
+        std::vector<float> temp = homework1.test();
+        shader.Use();
+        unsigned int pointvao, pointvbo;
+        glGenVertexArrays(1, &pointvao);
+        glGenBuffers(1, &pointvbo);
+        glBindVertexArray(pointvao);
+        // 绑定VBO并将控制点的顶点数据复制到VBO
+        glBindBuffer(GL_ARRAY_BUFFER, pointvbo);
+        glBufferData(GL_ARRAY_BUFFER, temp.size() * sizeof(GLfloat), temp.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
+        glEnableVertexAttribArray(1);
+        glLineWidth(4.0f);
+        glDrawArrays(GL_LINE_STRIP, 0, temp.size()/5);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        
+
         
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         // Swap the screen buffers
@@ -323,16 +345,6 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods) {
 
         curPoint[0] = xpos;
         curPoint[1] = ypos;
-
-
-        //for (int j = 0; j < controlPoints.size() / 5; ++j) {
-        //    for (int i = 0; i < 5; ++i) {
-        //        std::cout << controlPoints[j * 5 + i] << " ";
-        //    }
-        //    std::cout << std::endl;
-        //}
-
-
 
     }
 }

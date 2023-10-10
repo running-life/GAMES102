@@ -153,6 +153,7 @@
     <ClInclude Include="Dependencies\imgui\imstb_textedit.h" />
     <ClInclude Include="Dependencies\imgui\imstb_truetype.h" />
     <ClInclude Include="src\global.h" />
+    <ClInclude Include="src\HM1.h" />
     <ClInclude Include="src\MyWindow.h" />
     <ClInclude Include="src\Shader.h" />
   </ItemGroup>
