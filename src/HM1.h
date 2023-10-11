@@ -25,13 +25,40 @@ public:
 		return temp;
 	}
 
-	void polynomialInterpolation() {
+	static void polynomialInterpolation() {
 		if (controlPoints.size() < 2) {
 			return;
 		}
+		std::cout << "begin to calculate" << std::endl;
+		resultPolynomial.clear();
+		float* l = new float[controlPoints.size()];
 
-		
+		for (size_t i = 0; i < controlPoints.size(); ++i) {
+			l[i] = controlPoints[i].y;
+			for (size_t j = 0; j < controlPoints.size(); ++j) {
+				if (j != i)
+					l[i] /= (controlPoints[i].x - controlPoints[j].x);
+			}
+		}
 
+		HM1Point tempPoint;
+		tempPoint.r = tempPoint.g = tempPoint.b = 0.6;
+		for (float t = -0.99; t < 1.0f; t += 0.01) {
+			tempPoint.x = t;
+			tempPoint.y = 0;
+			for (size_t i = 0; i < controlPoints.size(); ++i) {
+				float temp = l[i];
+				for (size_t j = 0; j < controlPoints.size(); ++j) {
+					if (j != i) {
+						temp *= (t - controlPoints[j].x);
+					}
+				}
+				tempPoint.y += temp;
+			}
+			resultPolynomial.push_back(tempPoint);
+		}
+
+		delete []l;
 	}
 
 };

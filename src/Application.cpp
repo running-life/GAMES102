@@ -24,104 +24,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void mouse_callback(GLFWwindow* window, int button, int action, int mods);
 
 
-void temp() {
-
-    ImGui::Begin("test");
-    static ImVector<ImVec2> points;
-    static ImVec2 scrolling(0.0f, 0.0f);
-    static bool opt_enable_grid = true;
-    static bool opt_enable_context_menu = true;
-    static bool adding_line = false;
-
-    ImGui::Checkbox("Enable grid", &opt_enable_grid);
-    ImGui::Checkbox("Enable context menu", &opt_enable_context_menu);
-    ImGui::Text("Mouse Left: drag to add lines,\nMouse Right: drag to scroll, click for context menu.");
-
-    // Typically you would use a BeginChild()/EndChild() pair to benefit from a clipping region + own scrolling.
-    // Here we demonstrate that this can be replaced by simple offsetting + custom drawing + PushClipRect/PopClipRect() calls.
-    // To use a child window instead we could use, e.g:
-    //      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));      // Disable padding
-    //      ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(50, 50, 50, 255));  // Set a background color
-    //      ImGui::BeginChild("canvas", ImVec2(0.0f, 0.0f), true, ImGuiWindowFlags_NoMove);
-    //      ImGui::PopStyleColor();
-    //      ImGui::PopStyleVar();
-    //      [...]
-    //      ImGui::EndChild();
-
-    // Using InvisibleButton() as a convenience 1) it will advance the layout cursor and 2) allows us to use IsItemHovered()/IsItemActive()
-    ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();      // ImDrawList API uses screen coordinates!
-    ImVec2 canvas_sz = ImGui::GetContentRegionAvail();   // Resize canvas to what's available
-    if (canvas_sz.x < 50.0f) canvas_sz.x = 50.0f;
-    if (canvas_sz.y < 50.0f) canvas_sz.y = 50.0f;
-    ImVec2 canvas_p1 = ImVec2(canvas_p0.x + canvas_sz.x, canvas_p0.y + canvas_sz.y);
-
-    // Draw border and background color
-    ImGuiIO& io = ImGui::GetIO();
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-    draw_list->AddRectFilled(canvas_p0, canvas_p1, IM_COL32(50, 50, 50, 255));
-    draw_list->AddRect(canvas_p0, canvas_p1, IM_COL32(255, 255, 255, 255));
-
-    // This will catch our interactions
-    ImGui::InvisibleButton("canvas", canvas_sz, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
-    const bool is_hovered = ImGui::IsItemHovered(); // Hovered
-    const bool is_active = ImGui::IsItemActive();   // Held
-    const ImVec2 origin(canvas_p0.x + scrolling.x, canvas_p0.y + scrolling.y); // Lock scrolled origin
-    const ImVec2 mouse_pos_in_canvas(io.MousePos.x - origin.x, io.MousePos.y - origin.y);
-
-    // Add first and second point
-    if (is_hovered && !adding_line && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-    {
-        points.push_back(mouse_pos_in_canvas);
-        points.push_back(mouse_pos_in_canvas);
-        adding_line = true;
-    }
-    if (adding_line)
-    {
-        points.back() = mouse_pos_in_canvas;
-        if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
-            adding_line = false;
-    }
-
-    // Pan (we use a zero mouse threshold when there's no context menu)
-    // You may decide to make that threshold dynamic based on whether the mouse is hovering something etc.
-    const float mouse_threshold_for_pan = opt_enable_context_menu ? -1.0f : 0.0f;
-    if (is_active && ImGui::IsMouseDragging(ImGuiMouseButton_Right, mouse_threshold_for_pan))
-    {
-        scrolling.x += io.MouseDelta.x;
-        scrolling.y += io.MouseDelta.y;
-    }
-
-    // Context menu (under default mouse threshold)
-    ImVec2 drag_delta = ImGui::GetMouseDragDelta(ImGuiMouseButton_Right);
-    if (opt_enable_context_menu && drag_delta.x == 0.0f && drag_delta.y == 0.0f)
-        ImGui::OpenPopupOnItemClick("context", ImGuiPopupFlags_MouseButtonRight);
-    if (ImGui::BeginPopup("context"))
-    {
-        if (adding_line)
-            points.resize(points.size() - 2);
-        adding_line = false;
-        if (ImGui::MenuItem("Remove one", NULL, false, points.Size > 0)) { points.resize(points.size() - 2); }
-        if (ImGui::MenuItem("Remove all", NULL, false, points.Size > 0)) { points.clear(); }
-        ImGui::EndPopup();
-    }
-
-    // Draw grid + all lines in the canvas
-    draw_list->PushClipRect(canvas_p0, canvas_p1, true);
-    if (opt_enable_grid)
-    {
-        const float GRID_STEP = 64.0f;
-        for (float x = fmodf(scrolling.x, GRID_STEP); x < canvas_sz.x; x += GRID_STEP)
-            draw_list->AddLine(ImVec2(canvas_p0.x + x, canvas_p0.y), ImVec2(canvas_p0.x + x, canvas_p1.y), IM_COL32(200, 200, 200, 40));
-        for (float y = fmodf(scrolling.y, GRID_STEP); y < canvas_sz.y; y += GRID_STEP)
-            draw_list->AddLine(ImVec2(canvas_p0.x, canvas_p0.y + y), ImVec2(canvas_p1.x, canvas_p0.y + y), IM_COL32(200, 200, 200, 40));
-    }
-    for (int n = 0; n < points.Size; n += 2)
-        draw_list->AddLine(ImVec2(origin.x + points[n].x, origin.y + points[n].y), ImVec2(origin.x + points[n + 1].x, origin.y + points[n + 1].y), IM_COL32(255, 255, 0, 255), 2.0f);
-    draw_list->PopClipRect();
-    ImGui::End();
-}
-
-
 // Window dimensions
 const GLuint WIDTH = 1280, HEIGHT = 720;
 float curPoint[2] = {};
@@ -226,7 +128,7 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, 100 * sizeof(GLfloat), nullptr, GL_STATIC_DRAW);
 
     // 配置顶点属性指针
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
@@ -264,43 +166,27 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Draw our first triangle
         shader.Use();
         glBindVertexArray(VAO);
         glDrawArrays(GL_LINES, 0, 4);
         glBindVertexArray(0);
 
-        //glBindVertexArray(VAOTriangle);
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
-        //glBindVertexArray(0);
-
-        shader.Use();
 
         glBindVertexArray(pointVAO);
-        // 绑定VBO并将控制点的顶点数据复制到VBO
         glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-        glBufferData(GL_ARRAY_BUFFER, HM1::controlPoints.size() * sizeof(GLfloat), HM1::controlPoints.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, HM1::controlPoints.size() * 5 * sizeof(GLfloat), HM1::controlPoints.data(), GL_STATIC_DRAW);
         glPointSize(10);
-        glDrawArrays(GL_POINTS, 0, HM1::controlPoints.size() / 5);
+        glDrawArrays(GL_POINTS, 0, HM1::controlPoints.size());
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
 
-        std::vector<float> temp = homework1.test();
-        shader.Use();
-        unsigned int pointvao, pointvbo;
-        glGenVertexArrays(1, &pointvao);
-        glGenBuffers(1, &pointvbo);
-        glBindVertexArray(pointvao);
-        // 绑定VBO并将控制点的顶点数据复制到VBO
-        glBindBuffer(GL_ARRAY_BUFFER, pointvbo);
-        glBufferData(GL_ARRAY_BUFFER, temp.size() * sizeof(GLfloat), temp.data(), GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
-        glEnableVertexAttribArray(1);
-        glLineWidth(4.0f);
-        glDrawArrays(GL_LINE_STRIP, 0, temp.size()/5);
+        glBindVertexArray(pointVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+        glBufferData(GL_ARRAY_BUFFER, HM1::resultPolynomial.size() * 5 * sizeof(GLfloat), HM1::resultPolynomial.data(), GL_STATIC_DRAW);
+        glLineWidth(4.0);
+        glDrawArrays(GL_LINE_STRIP, 0, HM1::resultPolynomial.size());
+
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
         

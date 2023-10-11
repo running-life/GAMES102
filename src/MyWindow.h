@@ -34,6 +34,10 @@ void control_window(bool* open) {
         if (ImGui::Button("Save")) {
             HM1Point temp(curPoint[0], curPoint[1], 0.0f, 0.0f, 0.0f);
             HM1::controlPoints.push_back(temp);
+            HM1::polynomialInterpolation();
+            for (size_t i = 0; i < HM1::resultPolynomial.size(); ++i) {
+                std::cout << HM1::resultPolynomial[i].x << " " << HM1::resultPolynomial[i].y << std::endl;
+            }
         }
     
         ImGui::End();
