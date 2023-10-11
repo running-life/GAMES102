@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include "global.h"
 #include "HM1.h"
+#include <algorithm>
 
 
 
@@ -34,10 +35,11 @@ void control_window(bool* open) {
         if (ImGui::Button("Save")) {
             HM1Point temp(curPoint[0], curPoint[1], 0.0f, 0.0f, 0.0f);
             HM1::controlPoints.push_back(temp);
+            std::sort(HM1::controlPoints.begin(), HM1::controlPoints.end(), [](HM1Point& a, HM1Point& b) {
+                return a.x < b.x;
+                });
             HM1::polynomialInterpolation();
-            for (size_t i = 0; i < HM1::resultPolynomial.size(); ++i) {
-                std::cout << HM1::resultPolynomial[i].x << " " << HM1::resultPolynomial[i].y << std::endl;
-            }
+            
         }
     
         ImGui::End();
