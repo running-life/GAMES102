@@ -183,11 +183,20 @@ int main()
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
 
+        //glBindVertexArray(pointVAO);
+        //glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+        //glBufferData(GL_ARRAY_BUFFER, HM1::resultPolynomial.size() * 5 * sizeof(GLfloat), HM1::resultPolynomial.data(), GL_STATIC_DRAW);
+        //glLineWidth(4.0);
+        //glDrawArrays(GL_LINE_STRIP, 0, HM1::resultPolynomial.size());
+
+        //glBindBuffer(GL_ARRAY_BUFFER, 0);
+        //glBindVertexArray(0);
+
         glBindVertexArray(pointVAO);
         glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-        glBufferData(GL_ARRAY_BUFFER, HM1::resultPolynomial.size() * 5 * sizeof(GLfloat), HM1::resultPolynomial.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, HM1::resultGauss.size() * 5 * sizeof(GLfloat), HM1::resultGauss.data(), GL_STATIC_DRAW);
         glLineWidth(4.0);
-        glDrawArrays(GL_LINE_STRIP, 0, HM1::resultPolynomial.size());
+        glDrawArrays(GL_LINE_STRIP, 0, HM1::resultGauss.size());
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);

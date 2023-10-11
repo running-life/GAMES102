@@ -39,6 +39,7 @@ void control_window(bool* open) {
                 return a.x < b.x;
                 });
             HM1::polynomialInterpolation();
+            HM1::gaussInterpolation();
             
         }
     

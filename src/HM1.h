@@ -64,8 +64,66 @@ public:
 		delete []l;
 	}
 
-	static void GaussInterpolation() {
-		
+	static void gaussInterpolation() {
+		float sigma = 1;
+		float step = 0.01;
+		size_t n = controlPoints.size();
+		if (n < 2)
+			return;
+		resultGauss.clear();
+
+		auto g = [&](size_t i, float x) {
+			if (i == 0) return 1.0f;
+			float xi = controlPoints[i - 1].x;
+			return std::exp(-(x - xi) * (x - xi) / (2 * sigma * sigma));
+			};
+
+		// add another point, because we have n + 1 variable but n control points
+		float newPointX = 0, newPointY = 0;
+		for (size_t i = 0; i < n; ++i) {
+			newPointX += controlPoints[i].x;
+			newPointY += controlPoints[i].y;
+		}
+		newPointX /= n;
+		newPointY /= n;
+
+		// init gMatirx
+		Eigen::MatrixXf gMatrix(n + 1, n + 1);
+		for (size_t i = 0; i < n; ++i) {
+			for (size_t j = 0; j <= n; ++j) {
+				gMatrix(i, j) = g(j, controlPoints[i].x);
+			}
+		}
+		for (size_t j = 0; j <= n; ++j) {
+			gMatrix(n, j) = g(j, newPointX);
+		}
+
+		std::cout << gMatrix << std::endl;
+
+		// inti Y;
+		Eigen::VectorXf Y(n + 1);
+		for (size_t i = 0; i < n; ++i) {
+			Y(i) = controlPoints[i].y;
+		}
+		Y(n) = newPointY;
+
+		Eigen::VectorXf B = gMatrix.colPivHouseholderQr().solve(Y);
+
+		auto f = [&](float x) {
+			size_t n = controlPoints.size();
+			float ans = 0;
+			for (size_t i = 0; i <= n; ++i) {
+				ans += B[i] * g(i, x);
+			}
+			return ans;
+		};
+
+
+		for (float t = -0.99f; t < 1.0f; t += step) {
+			resultGauss.push_back({ t, f(t), 0.2f, 0.2f, 0.2f });
+		}
+
+
 	}
 
 };
