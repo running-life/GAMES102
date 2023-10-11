@@ -2,6 +2,8 @@
 
 
 #include <vector>
+#include <Eigen/Core>
+#include <Eigen/Dense>
 
 
 struct HM1Point {
@@ -13,6 +15,7 @@ class HM1 {
 public:
 	static std::vector<HM1Point> controlPoints;
 	static std::vector<HM1Point> resultPolynomial;
+	static std::vector<HM1Point> resultGauss;
 	std::vector<float> test() {
 		std::vector<float> temp;
 		for (float i = -0.80f; i < 1.0f; i += 0.04f) {
@@ -59,6 +62,10 @@ public:
 		}
 
 		delete []l;
+	}
+
+	static void GaussInterpolation() {
+		
 	}
 
 };

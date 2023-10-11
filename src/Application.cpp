@@ -30,7 +30,7 @@ const GLuint WIDTH = 1280, HEIGHT = 720;
 float curPoint[2] = {};
 std::vector<HM1Point> HM1::controlPoints = std::vector<HM1Point>();
 std::vector<HM1Point> HM1::resultPolynomial = std::vector<HM1Point>();
-
+std::vector<HM1Point> HM1::resultGauss = std::vector<HM1Point>();
 
 
 // The MAIN function, from here we start the application and run the game loop
@@ -95,6 +95,7 @@ int main()
     };
 
     HM1 homework1;
+
 
 
 
