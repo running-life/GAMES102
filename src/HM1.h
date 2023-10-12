@@ -13,20 +13,15 @@ struct HM1Point {
 
 class HM1 {
 public:
+	static bool polynomialInterpolationFlag;
+	static bool RBFInterpolationFlag;
+	static bool leastSquareFittingFlag;
+	static bool ridgeFlag;
 	static std::vector<HM1Point> controlPoints;
 	static std::vector<HM1Point> resultPolynomial;
 	static std::vector<HM1Point> resultGauss;
-	std::vector<float> test() {
-		std::vector<float> temp;
-		for (float i = -0.80f; i < 1.0f; i += 0.04f) {
-			temp.push_back(i);
-			temp.push_back(i*i);
-			temp.push_back(0.5f);
-			temp.push_back(0.5f);
-			temp.push_back(0.5f);
-		}
-		return temp;
-	}
+	static std::vector<HM1Point> resultLeastSquare;
+	static std::vector<HM1Point> resultRidge;
 
 	static void polynomialInterpolation() {
 		if (controlPoints.size() < 2) {
@@ -65,7 +60,7 @@ public:
 	}
 
 	static void gaussInterpolation() {
-		float sigma = 1;
+		float sigma = 0.01;
 		float step = 0.01;
 		size_t n = controlPoints.size();
 		if (n < 2)
@@ -98,7 +93,7 @@ public:
 			gMatrix(n, j) = g(j, newPointX);
 		}
 
-		std::cout << gMatrix << std::endl;
+		//std::cout << gMatrix << std::endl;
 
 		// inti Y;
 		Eigen::VectorXf Y(n + 1);
@@ -106,6 +101,8 @@ public:
 			Y(i) = controlPoints[i].y;
 		}
 		Y(n) = newPointY;
+
+		std::cout << Y << std::endl;
 
 		Eigen::VectorXf B = gMatrix.colPivHouseholderQr().solve(Y);
 
@@ -118,6 +115,7 @@ public:
 			return ans;
 		};
 
+		std::cout << gMatrix * B << std::endl;
 
 		for (float t = -0.99f; t < 1.0f; t += step) {
 			resultGauss.push_back({ t, f(t), 0.2f, 0.2f, 0.2f });
@@ -126,5 +124,51 @@ public:
 
 	}
 
+	static void leastSquareFitting() {
+		size_t n = controlPoints.size();
+		size_t m = 4;	// highest degree of polynomial
+		float step = 0.01;
+		if (n <= m)
+			return;
+		resultLeastSquare.clear();
+
+		Eigen::MatrixXf M(n, m);
+
+		auto b = [&](size_t i, float x) -> float {
+			if (i == 0)
+				return 1.0;
+			float ans = x;
+			for (int j = 1; j < i; ++j) {
+				ans *= x;
+			}
+			return ans;
+			};
+
+		for (size_t i = 0; i < n; ++i) {
+			for (size_t j = 0; j < m; ++j) {
+				M(i, j) = b(j, controlPoints[i].x);
+			}
+		}
+
+		Eigen::VectorXf Y(n);
+		for (size_t i = 0; i < n; ++i) {
+			Y(i) = controlPoints[i].y;
+		}
+		Y = M.transpose() * Y;
+		M = M.transpose() * M;
+		Eigen::VectorXf lambda = M.colPivHouseholderQr().solve(Y);
+
+		auto f = [&](float x) -> float {
+			float ans = 0;
+			for (size_t j = 0; j < m; ++j) {
+				ans += lambda(j) * b(j, x);
+			}
+			return ans;
+			};
+
+		for (float t = -0.99; t < 1.0f; t += step) {
+			resultLeastSquare.push_back({ t, f(t), 0.1f, 0.3f, 0.9f });
+		}
+	}
 };
 

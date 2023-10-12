@@ -26,11 +26,15 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods);
 
 
 // Window dimensions
-const GLuint WIDTH = 1280, HEIGHT = 720;
+const GLuint WIDTH = 1280, HEIGHT = 1280;
 float curPoint[2] = {};
 std::vector<HM1Point> HM1::controlPoints = std::vector<HM1Point>();
 std::vector<HM1Point> HM1::resultPolynomial = std::vector<HM1Point>();
 std::vector<HM1Point> HM1::resultGauss = std::vector<HM1Point>();
+std::vector<HM1Point> HM1::resultLeastSquare = std::vector<HM1Point>();
+bool HM1::polynomialInterpolationFlag = false;
+bool HM1::RBFInterpolationFlag = false;
+bool HM1::leastSquareFittingFlag = false;
 
 
 // The MAIN function, from here we start the application and run the game loop
@@ -139,6 +143,17 @@ int main()
     bool controlWindowFlag = true, infoWindowFlag = true;
 
 
+    auto draw = [&](std::vector<HM1Point> data) {
+        glBindVertexArray(pointVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+        glBufferData(GL_ARRAY_BUFFER, data.size() * 5 * sizeof(GLfloat), data.data(), GL_STATIC_DRAW);
+        glLineWidth(4.0);
+        glDrawArrays(GL_LINE_STRIP, 0, data.size());
+
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+        };
+
     // Game loop
     while (!glfwWindowShouldClose(window))
     {
@@ -152,6 +167,9 @@ int main()
         ImGui::Begin("HW1", NULL, windowFlags);
         ImGui::Checkbox("Information Window", &infoWindowFlag);
         ImGui::Checkbox("Control Window", &controlWindowFlag);
+        ImGui::Checkbox("Polynomial", &HM1::polynomialInterpolationFlag);
+        ImGui::Checkbox("Gauss", &HM1::RBFInterpolationFlag);
+        ImGui::Checkbox("LeastSquare", &HM1::leastSquareFittingFlag);
         ImGui::End();
 
         info_window(&infoWindowFlag);
@@ -183,23 +201,36 @@ int main()
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
 
-        //glBindVertexArray(pointVAO);
-        //glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-        //glBufferData(GL_ARRAY_BUFFER, HM1::resultPolynomial.size() * 5 * sizeof(GLfloat), HM1::resultPolynomial.data(), GL_STATIC_DRAW);
-        //glLineWidth(4.0);
-        //glDrawArrays(GL_LINE_STRIP, 0, HM1::resultPolynomial.size());
 
-        //glBindBuffer(GL_ARRAY_BUFFER, 0);
-        //glBindVertexArray(0);
+        if (HM1::polynomialInterpolationFlag) {
+            glBindVertexArray(pointVAO);
+            glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+            glBufferData(GL_ARRAY_BUFFER, HM1::resultPolynomial.size() * 5 * sizeof(GLfloat), HM1::resultPolynomial.data(), GL_STATIC_DRAW);
+            glLineWidth(4.0);
+            glDrawArrays(GL_LINE_STRIP, 0, HM1::resultPolynomial.size());
 
-        glBindVertexArray(pointVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-        glBufferData(GL_ARRAY_BUFFER, HM1::resultGauss.size() * 5 * sizeof(GLfloat), HM1::resultGauss.data(), GL_STATIC_DRAW);
-        glLineWidth(4.0);
-        glDrawArrays(GL_LINE_STRIP, 0, HM1::resultGauss.size());
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
+        }
 
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
+        if (HM1::RBFInterpolationFlag) {
+            glBindVertexArray(pointVAO);
+            glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
+            glBufferData(GL_ARRAY_BUFFER, HM1::resultGauss.size() * 5 * sizeof(GLfloat), HM1::resultGauss.data(), GL_STATIC_DRAW);
+            glLineWidth(4.0);
+            glDrawArrays(GL_LINE_STRIP, 0, HM1::resultGauss.size());
+
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
+        }
+
+        if (HM1::leastSquareFittingFlag) {
+            draw(HM1::resultLeastSquare);
+        }
+
+
+
+        
         
 
         

@@ -38,9 +38,21 @@ void control_window(bool* open) {
             std::sort(HM1::controlPoints.begin(), HM1::controlPoints.end(), [](HM1Point& a, HM1Point& b) {
                 return a.x < b.x;
                 });
-            HM1::polynomialInterpolation();
-            HM1::gaussInterpolation();
+            if(HM1::polynomialInterpolationFlag)
+                HM1::polynomialInterpolation();
+            if(HM1::RBFInterpolationFlag)
+                HM1::gaussInterpolation();
+            if (HM1::leastSquareFittingFlag) {
+                HM1::leastSquareFitting();
+            }
             
+        }
+
+        if (ImGui::Button("Clear")) {
+            HM1::controlPoints.clear();
+            HM1::resultGauss.clear();
+            HM1::resultPolynomial.clear();
+            HM1::resultLeastSquare.clear();
         }
     
         ImGui::End();
