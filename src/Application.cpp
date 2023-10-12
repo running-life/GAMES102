@@ -32,9 +32,11 @@ std::vector<HM1Point> HM1::controlPoints = std::vector<HM1Point>();
 std::vector<HM1Point> HM1::resultPolynomial = std::vector<HM1Point>();
 std::vector<HM1Point> HM1::resultGauss = std::vector<HM1Point>();
 std::vector<HM1Point> HM1::resultLeastSquare = std::vector<HM1Point>();
+std::vector<HM1Point> HM1::resultRidge = std::vector<HM1Point>();
 bool HM1::polynomialInterpolationFlag = false;
 bool HM1::RBFInterpolationFlag = false;
 bool HM1::leastSquareFittingFlag = false;
+bool HM1::ridgeFittingFlag = false;
 
 
 // The MAIN function, from here we start the application and run the game loop
@@ -170,6 +172,7 @@ int main()
         ImGui::Checkbox("Polynomial", &HM1::polynomialInterpolationFlag);
         ImGui::Checkbox("Gauss", &HM1::RBFInterpolationFlag);
         ImGui::Checkbox("LeastSquare", &HM1::leastSquareFittingFlag);
+        ImGui::Checkbox("Ridge", &HM1::ridgeFittingFlag);
         ImGui::End();
 
         info_window(&infoWindowFlag);
@@ -227,6 +230,9 @@ int main()
         if (HM1::leastSquareFittingFlag) {
             draw(HM1::resultLeastSquare);
         }
+
+        if (HM1::ridgeFittingFlag)
+            draw(HM1::resultRidge);
 
 
 

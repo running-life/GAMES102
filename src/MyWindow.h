@@ -42,10 +42,10 @@ void control_window(bool* open) {
                 HM1::polynomialInterpolation();
             if(HM1::RBFInterpolationFlag)
                 HM1::gaussInterpolation();
-            if (HM1::leastSquareFittingFlag) {
+            if (HM1::leastSquareFittingFlag)
                 HM1::leastSquareFitting();
-            }
-            
+            if (HM1::ridgeFittingFlag)
+                HM1::ridgeFitting();
         }
 
         if (ImGui::Button("Clear")) {
@@ -53,6 +53,7 @@ void control_window(bool* open) {
             HM1::resultGauss.clear();
             HM1::resultPolynomial.clear();
             HM1::resultLeastSquare.clear();
+            HM1::resultRidge.clear();
         }
     
         ImGui::End();

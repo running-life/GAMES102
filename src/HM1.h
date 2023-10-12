@@ -16,7 +16,7 @@ public:
 	static bool polynomialInterpolationFlag;
 	static bool RBFInterpolationFlag;
 	static bool leastSquareFittingFlag;
-	static bool ridgeFlag;
+	static bool ridgeFittingFlag;
 	static std::vector<HM1Point> controlPoints;
 	static std::vector<HM1Point> resultPolynomial;
 	static std::vector<HM1Point> resultGauss;
@@ -170,5 +170,58 @@ public:
 			resultLeastSquare.push_back({ t, f(t), 0.1f, 0.3f, 0.9f });
 		}
 	}
+
+
+	static void ridgeFitting() {
+		size_t n = controlPoints.size();
+		size_t m = 4;	// highest degree of polynomial
+		float step = 0.01;
+		float alpha = 0.0005;
+		if (n <= m)
+			return;
+		resultRidge.clear();
+
+		Eigen::MatrixXf M(n, m);
+
+		auto b = [&](size_t i, float x) -> float {
+			if (i == 0)
+				return 1.0;
+			float ans = x;
+			for (int j = 1; j < i; ++j) {
+				ans *= x;
+			}
+			return ans;
+			};
+
+		for (size_t i = 0; i < n; ++i) {
+			for (size_t j = 0; j < m; ++j) {
+				M(i, j) = b(j, controlPoints[i].x);
+			}
+		}
+
+		Eigen::VectorXf Y(n);
+		for (size_t i = 0; i < n; ++i) {
+			Y(i) = controlPoints[i].y;
+		}
+
+		Eigen::MatrixXf newM = M.transpose() * M + alpha * Eigen::MatrixXf::Identity(m, m);
+
+		Eigen::VectorXf lambda = newM.inverse() * M.transpose() * Y;
+
+		auto f = [&](float x) -> float {
+			float ans = 0;
+			for (size_t j = 0; j < m; ++j) {
+				ans += lambda(j) * b(j, x);
+			}
+			return ans;
+			};
+
+		for (float t = -0.99; t < 1.0f; t += step) {
+			resultRidge.push_back({ t, f(t), 0.7f, 0.5f, 0.9f });
+		}
+
+
+	}
+
 };
 
