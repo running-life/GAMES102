@@ -100,10 +100,6 @@ int main()
        HM1Point(0.0f,  1.0f, 1.0f, 1.0f, 1.0f)   // ending
     };
 
-    HM1 homework1;
-
-
-
 
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -177,12 +173,9 @@ int main()
 
         info_window(&infoWindowFlag);
         control_window(&controlWindowFlag);
-        //temp();
 
         ImGui::Render();
 
-        
-        
 
         // Render
         // Clear the color buffer
@@ -220,11 +213,6 @@ int main()
         if (HM1::ridgeFittingFlag)
             draw(HM1::resultRidge);
 
-
-
-        
-        
-
         
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         // Swap the screen buffers
@@ -254,8 +242,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void mouse_callback(GLFWwindow* window, int button, int action, int mods) {
     ImGuiIO& io = ImGui::GetIO();
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && !io.WantCaptureMouse) {
+    if (io.WantCaptureMouse)
+        return;
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         double xpos, ypos;
+
         glfwGetCursorPos(window, &xpos, &ypos);
         xpos /= (WIDTH/2);
         xpos -= 1;
@@ -263,9 +254,43 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods) {
         ypos = 1.0 - ypos;
         std::cout << "Mouse clicked at position: " << xpos << ", " << ypos << std::endl;
 
-        curPoint[0] = xpos;
-        curPoint[1] = ypos;
+        HM1Point temp(xpos, ypos, 0.0f, 0.0f, 0.0f);
+        HM1::controlPoints.push_back(temp);
+        std::sort(HM1::controlPoints.begin(), HM1::controlPoints.end(), [](HM1Point& a, HM1Point& b) {
+            return a.x < b.x;
+            });
+    }
+    
+
+
+    // TODO: remove the control point by left button mouse click
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        xpos /= (WIDTH / 2);
+        xpos -= 1;
+        ypos /= (HEIGHT / 2);
+        ypos = 1.0 - ypos;
+        
+        for (size_t i = 0; i < HM1::controlPoints.size(); ++i) {
+            if (std::abs(HM1::controlPoints[i].x - xpos) < 0.01) {
+                double xdis = HM1::controlPoints[i].x - xpos, ydis = HM1::controlPoints[i].y - ypos;
+                if (xdis * xdis + ydis * ydis <= 0.01) {
+                    HM1::controlPoints.erase(HM1::controlPoints.begin() + i);
+                }
+                break;
+            }
+        }
 
     }
+
+    if (HM1::polynomialInterpolationFlag)
+        HM1::polynomialInterpolation();
+    if (HM1::RBFInterpolationFlag)
+        HM1::gaussInterpolation();
+    if (HM1::leastSquareFittingFlag)
+        HM1::leastSquareFitting();
+    if (HM1::ridgeFittingFlag)
+        HM1::ridgeFitting();
 }
 

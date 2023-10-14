@@ -23,6 +23,24 @@ public:
 	static std::vector<HM1Point> resultLeastSquare;
 	static std::vector<HM1Point> resultRidge;
 
+	static std::vector<float> getX() {
+		size_t n = controlPoints.size();
+		std::vector<float> X(n);
+		for (size_t i = 0; i < n; ++i) {
+			X.push_back(controlPoints[i].x);
+		}
+		return X;
+	}
+
+	static std::vector<float> getY() {
+		size_t n = controlPoints.size();
+		std::vector<float> Y(n);
+		for (size_t i = 0; i < n; ++i) {
+			Y.push_back(controlPoints[i].y);
+		}
+		return Y;
+	}
+
 	static void polynomialInterpolation() {
 		if (controlPoints.size() < 2) {
 			return;
