@@ -27,7 +27,6 @@ public:
 		if (controlPoints.size() < 2) {
 			return;
 		}
-		std::cout << "begin to calculate" << std::endl;
 		resultPolynomial.clear();
 		float* l = new float[controlPoints.size()];
 
@@ -222,6 +221,8 @@ public:
 
 
 	}
+
+
 
 };
 

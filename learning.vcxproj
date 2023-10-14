@@ -141,6 +141,7 @@
     <ClCompile Include="Dependencies\imgui\imgui_tables.cpp" />
     <ClCompile Include="Dependencies\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\HM2.cpp" />
     <ClCompile Include="src\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -724,6 +725,7 @@
     <ClInclude Include="Dependencies\imgui\imstb_truetype.h" />
     <ClInclude Include="src\global.h" />
     <ClInclude Include="src\HM1.h" />
+    <ClInclude Include="src\HM2.h" />
     <ClInclude Include="src\MyWindow.h" />
     <ClInclude Include="src\Shader.h" />
   </ItemGroup>

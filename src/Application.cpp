@@ -26,7 +26,7 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods);
 
 
 // Window dimensions
-const GLuint WIDTH = 1280, HEIGHT = 1280;
+const GLuint WIDTH = 800, HEIGHT = 800;
 float curPoint[2] = {};
 std::vector<HM1Point> HM1::controlPoints = std::vector<HM1Point>();
 std::vector<HM1Point> HM1::resultPolynomial = std::vector<HM1Point>();
@@ -206,25 +206,11 @@ int main()
 
 
         if (HM1::polynomialInterpolationFlag) {
-            glBindVertexArray(pointVAO);
-            glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-            glBufferData(GL_ARRAY_BUFFER, HM1::resultPolynomial.size() * 5 * sizeof(GLfloat), HM1::resultPolynomial.data(), GL_STATIC_DRAW);
-            glLineWidth(4.0);
-            glDrawArrays(GL_LINE_STRIP, 0, HM1::resultPolynomial.size());
-
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindVertexArray(0);
+            draw(HM1::resultPolynomial);
         }
 
         if (HM1::RBFInterpolationFlag) {
-            glBindVertexArray(pointVAO);
-            glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-            glBufferData(GL_ARRAY_BUFFER, HM1::resultGauss.size() * 5 * sizeof(GLfloat), HM1::resultGauss.data(), GL_STATIC_DRAW);
-            glLineWidth(4.0);
-            glDrawArrays(GL_LINE_STRIP, 0, HM1::resultGauss.size());
-
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
-            glBindVertexArray(0);
+            draw(HM1::resultGauss);
         }
 
         if (HM1::leastSquareFittingFlag) {
