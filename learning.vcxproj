@@ -723,7 +723,6 @@
     <ClInclude Include="Dependencies\imgui\imstb_rectpack.h" />
     <ClInclude Include="Dependencies\imgui\imstb_textedit.h" />
     <ClInclude Include="Dependencies\imgui\imstb_truetype.h" />
-    <ClInclude Include="src\global.h" />
     <ClInclude Include="src\HM1.h" />
     <ClInclude Include="src\HM2.h" />
     <ClInclude Include="src\MyWindow.h" />
@@ -732,6 +731,7 @@
   <ItemGroup>
     <None Include="shader\fragment.shader" />
     <None Include="shader\vertex.shader" />
+    <None Include="shader\vertexWithoutColor.shader" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

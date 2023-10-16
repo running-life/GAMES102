@@ -13,33 +13,21 @@ struct HM1Point {
 
 class HM1 {
 public:
+	static Eigen::Vector3f controlPointsColor;
+	static Eigen::Vector3f polynomialInterpolationColor;
+	static Eigen::Vector3f RBFInterpolationColor;
+	static Eigen::Vector3f leastSquareFittingColor;
+	static Eigen::Vector3f ridgeFittingColor;
 	static bool polynomialInterpolationFlag;
 	static bool RBFInterpolationFlag;
 	static bool leastSquareFittingFlag;
 	static bool ridgeFittingFlag;
-	static std::vector<HM1Point> controlPoints;
-	static std::vector<HM1Point> resultPolynomial;
-	static std::vector<HM1Point> resultGauss;
-	static std::vector<HM1Point> resultLeastSquare;
-	static std::vector<HM1Point> resultRidge;
+	static std::vector<Eigen::Vector2f> controlPoints;
+	static std::vector<Eigen::Vector2f> resultPolynomial;
+	static std::vector<Eigen::Vector2f> resultGauss;
+	static std::vector<Eigen::Vector2f> resultLeastSquare;
+	static std::vector<Eigen::Vector2f> resultRidge;
 
-	static std::vector<float> getX() {
-		size_t n = controlPoints.size();
-		std::vector<float> X(n);
-		for (size_t i = 0; i < n; ++i) {
-			X.push_back(controlPoints[i].x);
-		}
-		return X;
-	}
-
-	static std::vector<float> getY() {
-		size_t n = controlPoints.size();
-		std::vector<float> Y(n);
-		for (size_t i = 0; i < n; ++i) {
-			Y.push_back(controlPoints[i].y);
-		}
-		return Y;
-	}
 
 	static void polynomialInterpolation() {
 		if (controlPoints.size() < 2) {
@@ -49,28 +37,27 @@ public:
 		float* l = new float[controlPoints.size()];
 
 		for (size_t i = 0; i < controlPoints.size(); ++i) {
-			l[i] = controlPoints[i].y;
+			l[i] = controlPoints[i].y();
 			for (size_t j = 0; j < controlPoints.size(); ++j) {
 				if (j != i)
-					l[i] /= (controlPoints[i].x - controlPoints[j].x);
+					l[i] /= (controlPoints[i].x() - controlPoints[j].x());
 			}
 		}
 
-		HM1Point tempPoint;
-		tempPoint.r = tempPoint.g = tempPoint.b = 0.6;
+		float xpos, ypos;
 		for (float t = -0.99; t < 1.0f; t += 0.01) {
-			tempPoint.x = t;
-			tempPoint.y = 0;
+			xpos = t;
+			ypos = 0;
 			for (size_t i = 0; i < controlPoints.size(); ++i) {
 				float temp = l[i];
 				for (size_t j = 0; j < controlPoints.size(); ++j) {
 					if (j != i) {
-						temp *= (t - controlPoints[j].x);
+						temp *= (t - controlPoints[j].x());
 					}
 				}
-				tempPoint.y += temp;
+				ypos += temp;
 			}
-			resultPolynomial.push_back(tempPoint);
+			resultPolynomial.push_back({xpos, ypos});
 		}
 
 		delete []l;
@@ -86,15 +73,15 @@ public:
 
 		auto g = [&](size_t i, float x) {
 			if (i == 0) return 1.0f;
-			float xi = controlPoints[i - 1].x;
+			float xi = controlPoints[i - 1].x();
 			return std::exp(-(x - xi) * (x - xi) / (2 * sigma * sigma));
 			};
 
 		// add another point, because we have n + 1 variable but n control points
 		float newPointX = 0, newPointY = 0;
 		for (size_t i = 0; i < n; ++i) {
-			newPointX += controlPoints[i].x;
-			newPointY += controlPoints[i].y;
+			newPointX += controlPoints[i].x();
+			newPointY += controlPoints[i].y();
 		}
 		newPointX /= n;
 		newPointY /= n;
@@ -103,7 +90,7 @@ public:
 		Eigen::MatrixXf gMatrix(n + 1, n + 1);
 		for (size_t i = 0; i < n; ++i) {
 			for (size_t j = 0; j <= n; ++j) {
-				gMatrix(i, j) = g(j, controlPoints[i].x);
+				gMatrix(i, j) = g(j, controlPoints[i].x());
 			}
 		}
 		for (size_t j = 0; j <= n; ++j) {
@@ -115,7 +102,7 @@ public:
 		// inti Y;
 		Eigen::VectorXf Y(n + 1);
 		for (size_t i = 0; i < n; ++i) {
-			Y(i) = controlPoints[i].y;
+			Y(i) = controlPoints[i].y();
 		}
 		Y(n) = newPointY;
 
@@ -135,7 +122,7 @@ public:
 		std::cout << gMatrix * B << std::endl;
 
 		for (float t = -0.99f; t < 1.0f; t += step) {
-			resultGauss.push_back({ t, f(t), 0.2f, 0.2f, 0.2f });
+			resultGauss.push_back({ t, f(t)});
 		}
 
 
@@ -163,13 +150,13 @@ public:
 
 		for (size_t i = 0; i < n; ++i) {
 			for (size_t j = 0; j < m; ++j) {
-				M(i, j) = b(j, controlPoints[i].x);
+				M(i, j) = b(j, controlPoints[i].x());
 			}
 		}
 
 		Eigen::VectorXf Y(n);
 		for (size_t i = 0; i < n; ++i) {
-			Y(i) = controlPoints[i].y;
+			Y(i) = controlPoints[i].y();
 		}
 		Y = M.transpose() * Y;
 		M = M.transpose() * M;
@@ -184,7 +171,7 @@ public:
 			};
 
 		for (float t = -0.99; t < 1.0f; t += step) {
-			resultLeastSquare.push_back({ t, f(t), 0.1f, 0.3f, 0.9f });
+			resultLeastSquare.push_back({ t, f(t)});
 		}
 	}
 
@@ -212,13 +199,13 @@ public:
 
 		for (size_t i = 0; i < n; ++i) {
 			for (size_t j = 0; j < m; ++j) {
-				M(i, j) = b(j, controlPoints[i].x);
+				M(i, j) = b(j, controlPoints[i].x());
 			}
 		}
 
 		Eigen::VectorXf Y(n);
 		for (size_t i = 0; i < n; ++i) {
-			Y(i) = controlPoints[i].y;
+			Y(i) = controlPoints[i].y();
 		}
 
 		Eigen::MatrixXf newM = M.transpose() * M + alpha * Eigen::MatrixXf::Identity(m, m);
@@ -234,7 +221,7 @@ public:
 			};
 
 		for (float t = -0.99; t < 1.0f; t += step) {
-			resultRidge.push_back({ t, f(t), 0.7f, 0.5f, 0.9f });
+			resultRidge.push_back({ t, f(t)});
 		}
 
 

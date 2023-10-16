@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <vector>
 #include "Shader.h"
-#include "global.h"
 #include "MyWindow.h"
 #include "HM1.h"
 
@@ -27,17 +26,21 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods);
 
 // Window dimensions
 const GLuint WIDTH = 800, HEIGHT = 800;
-float curPoint[2] = {};
-std::vector<HM1Point> HM1::controlPoints = std::vector<HM1Point>();
-std::vector<HM1Point> HM1::resultPolynomial = std::vector<HM1Point>();
-std::vector<HM1Point> HM1::resultGauss = std::vector<HM1Point>();
-std::vector<HM1Point> HM1::resultLeastSquare = std::vector<HM1Point>();
-std::vector<HM1Point> HM1::resultRidge = std::vector<HM1Point>();
+std::vector<Eigen::Vector2f> HM1::controlPoints = std::vector<Eigen::Vector2f>();
+std::vector<Eigen::Vector2f> HM1::resultPolynomial = std::vector<Eigen::Vector2f>();
+std::vector<Eigen::Vector2f> HM1::resultGauss = std::vector<Eigen::Vector2f>();
+std::vector<Eigen::Vector2f> HM1::resultLeastSquare = std::vector<Eigen::Vector2f>();
+std::vector<Eigen::Vector2f> HM1::resultRidge = std::vector<Eigen::Vector2f>();
 bool HM1::polynomialInterpolationFlag = false;
 bool HM1::RBFInterpolationFlag = false;
 bool HM1::leastSquareFittingFlag = false;
 bool HM1::ridgeFittingFlag = false;
-
+Eigen::Vector3f HM1::controlPointsColor = {0, 0, 0};
+Eigen::Vector3f HM1::polynomialInterpolationColor = { 0.3, 0.3, 0.3 };
+Eigen::Vector3f HM1::RBFInterpolationColor = { 0.5, 0.3, 0.7 };
+Eigen::Vector3f HM1::leastSquareFittingColor = { 0.1, 0.7, 0.5 };
+Eigen::Vector3f HM1::ridgeFittingColor = { 0.2, 0.4, 0.9 };
+Eigen::Vector3f axisColor = { 1.0, 1.0, 1.0 };
 
 // The MAIN function, from here we start the application and run the game loop
 int main()
@@ -85,8 +88,10 @@ int main()
     glViewport(0, 0, width, height);
 
     // Define the shader
-    Shader shader("./shader/vertex.shader", "./shader/fragment.shader");
+    Shader shader("./shader/vertexWithoutColor.shader", "./shader/fragment.shader");
     shader.Use();
+
+
     
 
 
@@ -112,8 +117,8 @@ int main()
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
+    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
+    //glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
 
@@ -132,19 +137,19 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, 100 * sizeof(GLfloat), nullptr, GL_STATIC_DRAW);
 
     // 配置顶点属性指针
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
+    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(2 * sizeof(GLfloat)));
+    //glEnableVertexAttribArray(1);
 
 
     bool controlWindowFlag = true, infoWindowFlag = true;
 
 
-    auto draw = [&](std::vector<HM1Point> data) {
+    auto draw = [&](std::vector<Eigen::Vector2f> data) {
         glBindVertexArray(pointVAO);
         glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-        glBufferData(GL_ARRAY_BUFFER, data.size() * 5 * sizeof(GLfloat), data.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, data.size() * 2 * sizeof(GLfloat), data.data(), GL_STATIC_DRAW);
         glLineWidth(4.0);
         glDrawArrays(GL_LINE_STRIP, 0, data.size());
 
@@ -183,14 +188,22 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         shader.Use();
+
+        int vertexColorLocation = glGetUniformLocation(shader.Program, "color");
+        glUniform3f(vertexColorLocation, 1.0, 1.0, 1.0);
+
+
         glBindVertexArray(VAO);
+        glLineWidth(4.0);
         glDrawArrays(GL_LINES, 0, 4);
         glBindVertexArray(0);
 
 
+
+        glUniform3f(vertexColorLocation, axisColor.x(), axisColor.y(), axisColor.z());
         glBindVertexArray(pointVAO);
         glBindBuffer(GL_ARRAY_BUFFER, pointVBO);
-        glBufferData(GL_ARRAY_BUFFER, HM1::controlPoints.size() * 5 * sizeof(GLfloat), HM1::controlPoints.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, HM1::controlPoints.size() * 2 * sizeof(GLfloat), HM1::controlPoints.data(), GL_STATIC_DRAW);
         glPointSize(10);
         glDrawArrays(GL_POINTS, 0, HM1::controlPoints.size());
 
@@ -199,19 +212,25 @@ int main()
 
 
         if (HM1::polynomialInterpolationFlag) {
+            glUniform3f(vertexColorLocation, HM1::polynomialInterpolationColor.x(), HM1::polynomialInterpolationColor.y(), HM1::polynomialInterpolationColor.z());
             draw(HM1::resultPolynomial);
         }
 
         if (HM1::RBFInterpolationFlag) {
+            glUniform3f(vertexColorLocation, HM1::RBFInterpolationColor.x(), HM1::RBFInterpolationColor.y(), HM1::RBFInterpolationColor.z());
             draw(HM1::resultGauss);
         }
 
         if (HM1::leastSquareFittingFlag) {
+            glUniform3f(vertexColorLocation, HM1::leastSquareFittingColor.x(), HM1::leastSquareFittingColor.y(), HM1::leastSquareFittingColor.z());
             draw(HM1::resultLeastSquare);
         }
 
-        if (HM1::ridgeFittingFlag)
+        if (HM1::ridgeFittingFlag) {
+            glUniform3f(vertexColorLocation, HM1::ridgeFittingColor.x(), HM1::ridgeFittingColor.y(), HM1::ridgeFittingColor.z());
             draw(HM1::resultRidge);
+        }
+            
 
         
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -254,10 +273,9 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods) {
         ypos = 1.0 - ypos;
         std::cout << "Mouse clicked at position: " << xpos << ", " << ypos << std::endl;
 
-        HM1Point temp(xpos, ypos, 0.0f, 0.0f, 0.0f);
-        HM1::controlPoints.push_back(temp);
-        std::sort(HM1::controlPoints.begin(), HM1::controlPoints.end(), [](HM1Point& a, HM1Point& b) {
-            return a.x < b.x;
+        HM1::controlPoints.push_back({xpos, ypos});
+        std::sort(HM1::controlPoints.begin(), HM1::controlPoints.end(), [](Eigen::Vector2f& a, Eigen::Vector2f& b) {
+            return a.x() < b.x();
             });
     }
     
@@ -273,8 +291,8 @@ void mouse_callback(GLFWwindow* window, int button, int action, int mods) {
         ypos = 1.0 - ypos;
         
         for (size_t i = 0; i < HM1::controlPoints.size(); ++i) {
-            if (std::abs(HM1::controlPoints[i].x - xpos) < 0.01) {
-                double xdis = HM1::controlPoints[i].x - xpos, ydis = HM1::controlPoints[i].y - ypos;
+            if (std::abs(HM1::controlPoints[i].x() - xpos) < 0.01) {
+                double xdis = HM1::controlPoints[i].x() - xpos, ydis = HM1::controlPoints[i].y() - ypos;
                 if (xdis * xdis + ydis * ydis <= 0.01) {
                     HM1::controlPoints.erase(HM1::controlPoints.begin() + i);
                 }
