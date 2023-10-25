@@ -28,7 +28,6 @@ public:
 	static std::vector<Eigen::Vector2f> resultLeastSquare;
 	static std::vector<Eigen::Vector2f> resultRidge;
 
-
 	static void polynomialInterpolation() {
 		if (controlPoints.size() < 2) {
 			return;
